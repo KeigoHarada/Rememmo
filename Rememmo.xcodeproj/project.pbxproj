@@ -45,6 +45,11 @@
 			path = RememmoUITests;
 			sourceTree = "<group>";
 		};
+		21D3DC752E119D5500F77D9F /* Docs */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Docs;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -75,6 +80,7 @@
 		21D3DC3D2E119D1A00F77D9F = {
 			isa = PBXGroup;
 			children = (
+				21D3DC752E119D5500F77D9F /* Docs */,
 				21D3DC482E119D1A00F77D9F /* Rememmo */,
 				21D3DC5B2E119D1C00F77D9F /* RememmoTests */,
 				21D3DC652E119D1C00F77D9F /* RememmoUITests */,
@@ -109,6 +115,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				21D3DC482E119D1A00F77D9F /* Rememmo */,
+				21D3DC752E119D5500F77D9F /* Docs */,
 			);
 			name = Rememmo;
 			packageProductDependencies = (

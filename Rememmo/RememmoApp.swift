@@ -1,10 +1,3 @@
-//
-//  RememmoApp.swift
-//  Rememmo
-//
-//  Created by 原田啓吾 on 2025/06/30.
-//
-
 import SwiftUI
 import SwiftData
 
@@ -12,7 +5,7 @@ import SwiftData
 struct RememmoApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Memo.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
