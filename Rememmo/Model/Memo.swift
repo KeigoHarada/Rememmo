@@ -8,6 +8,7 @@ final class Memo {
     var content: String
     var createdAt: Date
     var updatedAt: Date
+    var currentCommitId: UUID?
     
     init(title: String, content: String) {
         self.id = UUID()
@@ -15,5 +16,6 @@ final class Memo {
         self.content = content
         self.createdAt = Date()
         self.updatedAt = Date()
+        self.currentCommitId = nil
     }
 }

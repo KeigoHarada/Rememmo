@@ -7,6 +7,10 @@ struct AddMemoView: View {
     @State private var title = ""
     @State private var content = ""
     
+    private var gitService: MemoGitService {
+        MemoGitService(modelContext: modelContext)
+    }
+    
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
@@ -43,6 +47,11 @@ struct AddMemoView: View {
     private func saveMemo() {
         let newMemo = Memo(title: title, content: content)
         modelContext.insert(newMemo)
+        
+        // 初回コミットを作成
+        let commit = gitService.commit(memo: newMemo, message: "初回コミット")
+        print("初回コミット作成: \(commit.commitMessage)")
+        
         dismiss()
     }
 }

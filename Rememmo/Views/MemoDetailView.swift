@@ -7,6 +7,11 @@ struct MemoDetailView: View {
     @State private var isEditing = false
     @State private var editedTitle = ""
     @State private var editedContent = ""
+    @State private var showingCommitHistory = false
+    
+    private var gitService: MemoGitService {
+        MemoGitService(modelContext: modelContext)
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -70,8 +75,15 @@ struct MemoDetailView: View {
                 .padding()
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("編集") {
-                            startEdit()
+                        Menu {
+                            Button("編集") {
+                                startEdit()
+                            }
+                            Button("コミット履歴") {
+                                showingCommitHistory = true
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
                         }
                     }
                 }
@@ -79,6 +91,9 @@ struct MemoDetailView: View {
         }
         .navigationTitle("メモ詳細")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showingCommitHistory) {
+            MemoCommitHistoryView(memo: memo, gitService: gitService)
+        }
     }
     
     private func startEdit() {
@@ -92,9 +107,23 @@ struct MemoDetailView: View {
     }
     
     private func saveEdit() {
+        let oldTitle = memo.title
+        let oldContent = memo.content
+        
         memo.title = editedTitle
         memo.content = editedContent
-        memo.updatedAt = Date()
+        
+        // 自動コミット
+        let message = gitService.generateCommitMessage(
+            oldTitle: oldTitle,
+            oldContent: oldContent,
+            newTitle: editedTitle,
+            newContent: editedContent
+        )
+        
+        let commit = gitService.commit(memo: memo, message: message)
+        print("コミット作成: \(commit.commitMessage)")
+        
         isEditing = false
     }
 }
