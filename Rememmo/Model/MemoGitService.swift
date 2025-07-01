@@ -63,4 +63,29 @@ class MemoGitService {
             return "変更なし"
         }
     }
+    
+    // コミットから復元
+    func restoreFromCommit(memo: Memo, commit: MemoCommit) -> MemoCommit {
+        // 現在の状態を保存
+        let currentCommit = self.commit(memo: memo, message: "復元前の状態を保存")
+        
+        // コミットの内容で復元
+        memo.title = commit.title
+        memo.content = commit.content
+        memo.updatedAt = Date()
+        
+        // 復元コミットを作成
+        let restoreCommit = MemoCommit(
+            memoId: memo.id,
+            title: memo.title,
+            content: memo.content,
+            commitMessage: "コミット「\(commit.commitMessage)」から復元",
+            parentCommitId: currentCommit.id
+        )
+        
+        memo.currentCommitId = restoreCommit.id
+        modelContext.insert(restoreCommit)
+        
+        return restoreCommit
+    }
 } 

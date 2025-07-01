@@ -29,37 +29,83 @@ struct MemoCommitHistoryView: View {
                     .listRowBackground(Color.clear)
                 } else {
                     ForEach(commits, id: \.id) { commit in
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(commit.commitMessage)
-                                .font(.headline)
-                            
-                            Text(commit.timestamp, format: .dateTime.day().month().year().hour().minute())
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            if commit.branchName != "main" {
-                                Text("ブランチ: \(commit.branchName)")
-                                    .font(.caption)
-                                    .foregroundColor(.blue)
-                            }
+                        NavigationLink(destination: MemoCommitPreviewView(
+                            commit: commit,
+                            memo: memo,
+                            gitService: gitService
+                        )
+                        .presentationDetents([.large])
+                        .presentationDragIndicator(.visible)) {
+                            CommitHistoryRow(commit: commit)
                         }
-                        .padding(.vertical, 4)
                     }
                 }
             }
             .navigationTitle("コミット履歴")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("閉じる") {
-                        dismiss()
-                    }
-                }
-            }
         }
         .onAppear {
             commits = gitService.getCommitHistory(memoId: memo.id)
         }
+    }
+}
+
+struct CommitHistoryRow: View {
+    let commit: MemoCommit
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // コミットアイコン
+            VStack {
+                Image(systemName: "circle.fill")
+                    .font(.system(size: 8))
+                    .foregroundColor(.blue)
+                
+                if commit.branchName != "main" {
+                    Rectangle()
+                        .fill(Color.blue)
+                        .frame(width: 2, height: 20)
+                }
+            }
+            .frame(width: 20)
+            
+            // コミット情報
+            VStack(alignment: .leading, spacing: 6) {
+                Text(commit.commitMessage)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                
+                HStack {
+                    Text(commit.timestamp, format: .dateTime.day().month().year().hour().minute())
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    if commit.branchName != "main" {
+                        Text("•")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Text(commit.branchName)
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(4)
+                    }
+                }
+                
+                // プレビューテキスト
+                Text(commit.title.isEmpty ? commit.content : commit.title)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
+            
+            Spacer()
+        }
+        .padding(.vertical, 8)
     }
 }
 
