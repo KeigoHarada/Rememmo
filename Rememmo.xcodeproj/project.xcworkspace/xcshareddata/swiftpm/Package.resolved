@@ -1,0 +1,15 @@
+{
+  "originHash" : "6c9c2aab113a6190f37373a0160285a83515d1ae74b5068ef26ddf1b8fdc168c",
+  "pins" : [
+    {
+      "identity" : "minigit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/light-tech/MiniGit",
+      "state" : {
+        "branch" : "main",
+        "revision" : "95da4b4176f90d1d70fb2bc42f59068bfb077950"
+      }
+    }
+  ],
+  "version" : 3
+}

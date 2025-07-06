@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		21D3DDB62E1AE29600F77D9F /* MiniGit in Frameworks */ = {isa = PBXBuildFile; productRef = 21D3DDB52E1AE29600F77D9F /* MiniGit */; };
+		21D3DDE62E1AE39E00F77D9F /* XGit in Frameworks */ = {isa = PBXBuildFile; productRef = 21D3DDE52E1AE39E00F77D9F /* XGit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		21D3DC592E119D1C00F77D9F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -57,6 +62,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				21D3DDE62E1AE39E00F77D9F /* XGit in Frameworks */,
+				21D3DDB62E1AE29600F77D9F /* MiniGit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -84,6 +91,7 @@
 				21D3DC482E119D1A00F77D9F /* Rememmo */,
 				21D3DC5B2E119D1C00F77D9F /* RememmoTests */,
 				21D3DC652E119D1C00F77D9F /* RememmoUITests */,
+				21D3DDB42E1AE29600F77D9F /* Frameworks */,
 				21D3DC472E119D1A00F77D9F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -96,6 +104,13 @@
 				21D3DC622E119D1C00F77D9F /* RememmoUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		21D3DDB42E1AE29600F77D9F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -119,6 +134,8 @@
 			);
 			name = Rememmo;
 			packageProductDependencies = (
+				21D3DDB52E1AE29600F77D9F /* MiniGit */,
+				21D3DDE52E1AE39E00F77D9F /* XGit */,
 			);
 			productName = Rememmo;
 			productReference = 21D3DC462E119D1A00F77D9F /* Rememmo.app */;
@@ -202,6 +219,9 @@
 			);
 			mainGroup = 21D3DC3D2E119D1A00F77D9F;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				21D3DDB32E1AE14700F77D9F /* XCRemoteSwiftPackageReference "MiniGit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 21D3DC472E119D1A00F77D9F /* Products */;
 			projectDirPath = "";
@@ -565,6 +585,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		21D3DDB32E1AE14700F77D9F /* XCRemoteSwiftPackageReference "MiniGit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/light-tech/MiniGit";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		21D3DDB52E1AE29600F77D9F /* MiniGit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 21D3DDB32E1AE14700F77D9F /* XCRemoteSwiftPackageReference "MiniGit" */;
+			productName = MiniGit;
+		};
+		21D3DDE52E1AE39E00F77D9F /* XGit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 21D3DDB32E1AE14700F77D9F /* XCRemoteSwiftPackageReference "MiniGit" */;
+			productName = XGit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 21D3DC3E2E119D1A00F77D9F /* Project object */;
 }
