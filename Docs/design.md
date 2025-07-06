@@ -31,7 +31,7 @@ Rememmo App
 
 - **フロントエンド**: SwiftUI
 - **データ管理**: SwiftData
-- **Git管理**: SwiftGit2
+- **Git管理**: libgit2呼び出し
 - **アーキテクチャ**: MVVM + Repository Pattern
 - **プラットフォーム**: iOS 17.0+
 
