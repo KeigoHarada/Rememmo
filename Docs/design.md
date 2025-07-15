@@ -18,11 +18,11 @@ Rememmo App
 │   ├── GitService
 │   └── SearchViewModel
 ├── Data Layer
-│   ├── SwiftData Models
-│   ├── Git Repository Management
+│   ├── SwiftData Models (概要データのみ)
+│   ├── Git Repository Management (メモ内容)
 │   └── File System Management
 └── Infrastructure Layer
-    ├── SwiftGit2 Integration
+    ├── MiniGit Integration
     ├── Error Handling
     └── Logging System
 ```
@@ -30,35 +30,66 @@ Rememmo App
 ### 1.2 技術スタック
 
 - **フロントエンド**: SwiftUI
-- **データ管理**: SwiftData
-- **Git管理**: libgit2呼び出し
+- **データ管理**: SwiftData (概要) + MiniGit (メモ内容)
+- **Git管理**: MiniGit
 - **アーキテクチャ**: MVVM + Repository Pattern
 - **プラットフォーム**: iOS 17.0+
 
-## 2. ファイル保存方式
+## 2. データ保存戦略
 
-### 2.1 メモファイルの保存構造
+### 2.1 データ保存の役割分担
+
+#### 2.1.1 SwiftDataの役割（概要データのみ）
+
+- **メモの基本情報**: ID、タイトル、作成日、更新日
+- **メタデータ**: 現在のコミットID、タグ、アーカイブ状態
+- **UI表示用データ**: 検索・フィルタリング用のインデックス
+- **アプリケーション状態**: 現在の編集状態、表示設定
+
+#### 2.1.2 MiniGitの役割（メモ内容の完全保存）
+
+- **メモの完全な内容**: タイトル、本文、フォーマット情報
+- **バージョン管理**: 変更履歴、コミット履歴
+- **差分管理**: 変更の追跡、復元機能
+- **ブランチ管理**: 複数のバージョン管理
+
+### 2.2 メモファイルの保存構造
 
 ```
 Documents/
 ├── memos/
 │   ├── {memo-id-1}/
-│   │   ├── .git/                    # Gitリポジトリ
-│   │   ├── memo.md                  # 現在のメモ内容
-│   │   └── metadata.json            # メタデータ
+│   │   ├── .git/                    # Gitリポジトリ（メモ内容の完全履歴）
+│   │   └── memo.md                  # 現在のメモ内容
 │   ├── {memo-id-2}/
 │   │   ├── .git/
-│   │   ├── memo.md
-│   │   └── metadata.json
+│   │   └── memo.md
 │   └── ...
 └── app/
     ├── settings.json                # アプリ設定
     └── search_history.json          # 検索履歴
 ```
 
-### 2.2 ファイル形式
+### 2.3 データモデルの設計
 
-#### 2.2.1 メモファイル (memo.md)
+#### 2.3.1 SwiftDataモデル（Memo.swift）
+
+```swift
+@Model
+final class Memo {
+    var id: UUID                    // メモの一意識別子
+    var title: String               // メモタイトル（概要）
+    var contentPreview: String      // 内容のプレビュー（最初の100文字）
+    var createdAt: Date             // 作成日
+    var updatedAt: Date             // 更新日
+    var currentCommitId: String?    // 現在のGitコミットID
+    var tags: [String]              // タグ
+    var isArchived: Bool            // アーカイブ状態
+    var wordCount: Int              // 文字数（検索用）
+}
+```
+
+#### 2.3.2 Git保存形式（memo.md）
 
 ```markdown
 # メモタイトル
@@ -71,29 +102,58 @@ Documents/
 - リスト項目2
 
 **太字**や*斜体*も使用可能
+
+---
+metadata:
+  id: memo-uuid
+  createdAt: 2025-01-01T00:00:00Z
+  updatedAt: 2025-01-01T12:00:00Z
+  tags: [タグ1, タグ2]
+  wordCount: 150
 ```
 
-#### 2.2.2 メタデータファイル (metadata.json)
+### 2.4 データ操作フロー
 
-```json
-{
-  "id": "memo-uuid",
-  "title": "メモタイトル",
-  "createdAt": "2025-01-01T00:00:00Z",
-  "updatedAt": "2025-01-01T12:00:00Z",
-  "currentCommitId": "commit-hash",
-  "currentBranch": "main",
-  "tags": ["タグ1", "タグ2"],
-  "isArchived": false
-}
-```
+#### 2.4.1 メモ作成時
 
-### 2.3 Git管理方式
+1. **SwiftData**: 基本情報（ID、タイトル、作成日）を保存
+2. **Git**: メモ内容をmemo.mdとして保存し、初期コミット
+3. **SwiftData**: コミットIDとプレビュー情報を更新
 
-- 各メモフォルダに独立したGitリポジトリを作成
-- メモ編集時に自動コミット
-- コミットメッセージは変更内容に基づいて自動生成
-- ブランチ機能でバージョン管理
+#### 2.4.2 メモ編集時
+
+1. **Git**: 現在の内容をmemo.mdに保存
+2. **Git**: 変更をステージングしてコミット
+3. **SwiftData**: タイトル、プレビュー、更新日、コミットIDを更新
+
+#### 2.4.3 メモ表示時
+
+1. **SwiftData**: 基本情報とプレビューを取得
+2. **Git**: 必要に応じて完全な内容を取得
+3. **UI**: 統合されたデータを表示
+
+#### 2.4.4 検索時
+
+1. **SwiftData**: タイトルとプレビューで高速検索
+2. **Git**: 必要に応じて内容での全文検索
+
+### 2.5 パフォーマンス最適化
+
+#### 2.5.1 遅延読み込み
+
+- メモ一覧: SwiftDataの概要データのみ表示
+- メモ詳細: Gitから完全な内容を読み込み
+- 検索結果: プレビューで絞り込み、詳細は必要時のみ
+
+#### 2.5.2 キャッシュ戦略
+
+- **SwiftData**: アプリケーション全体でキャッシュ
+- **Git**: メモ単位でキャッシュ、メモリ効率を考慮
+
+#### 2.5.3 同期戦略
+
+- **SwiftData**: リアルタイム同期
+- **Git**: 編集完了時に同期
 
 ## 3. 画面設計
 
