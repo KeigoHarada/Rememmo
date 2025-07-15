@@ -7,8 +7,8 @@ struct AddMemoView: View {
     @State private var title = ""
     @State private var content = ""
     
-    private var gitService: MemoGitService {
-        MemoGitService(modelContext: modelContext)
+    private var gitService: GitService {
+        GitService(modelContext: modelContext)
     }
     
     var body: some View {
@@ -49,8 +49,8 @@ struct AddMemoView: View {
         modelContext.insert(newMemo)
         
         // 初回コミットを作成
-        let commit = gitService.commit(memo: newMemo, message: "初回コミット")
-        print("初回コミット作成: \(commit.commitMessage)")
+        try! gitService.commit(memo: newMemo, message: "初回コミット")
+        print("初回コミット作成")
         
         dismiss()
     }

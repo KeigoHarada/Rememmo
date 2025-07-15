@@ -9,8 +9,8 @@ struct MemoDetailView: View {
     @State private var editedContent = ""
     @State private var showingCommitHistory = false
     
-    private var gitService: MemoGitService {
-        MemoGitService(modelContext: modelContext)
+    private var gitService: GitService {
+        GitService(modelContext: modelContext)
     }
     
     var body: some View {
@@ -91,9 +91,6 @@ struct MemoDetailView: View {
         }
         .navigationTitle("メモ詳細")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showingCommitHistory) {
-            MemoCommitHistoryView(memo: memo, gitService: gitService)
-        }
     }
     
     private func startEdit() {
@@ -121,8 +118,8 @@ struct MemoDetailView: View {
             newContent: editedContent
         )
         
-        let commit = gitService.commit(memo: memo, message: message)
-        print("コミット作成: \(commit.commitMessage)")
+        try! gitService.commit(memo: memo, message: message)
+        print("コミット作成")
         
         isEditing = false
     }

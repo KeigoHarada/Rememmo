@@ -5,8 +5,7 @@ import SwiftData
 struct RememmoApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Memo.self,
-            MemoCommit.self,
+            Memo.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import XGit
 
 @Model
 final class Memo {
@@ -8,14 +9,11 @@ final class Memo {
     var content: String
     var createdAt: Date
     var updatedAt: Date
-    var currentCommitId: UUID?
-    
     init(title: String, content: String) {
         self.id = UUID()
         self.title = title
         self.content = content
         self.createdAt = Date()
         self.updatedAt = Date()
-        self.currentCommitId = nil
     }
 }
