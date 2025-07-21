@@ -1,286 +1,212 @@
-# MiniGit統合手順書
+# MiniGit 統合ガイド
 
 ## 概要
 
-RememmoアプリにMiniGitパッケージを統合して、実際のGitリポジトリ操作を実装します。SOLID原則に従った設計を維持しながら、開発効率を向上させます。
+RememmoアプリでMiniGitを使用してGitリポジトリの作成とコミットを行う実装例。
 
-## 前提条件
+## 必要な依存関係
 
-- Xcode 15.0以上
-- iOS 17.0以上
-- Swift 5.9以上
+### 1. パッケージの追加
 
-## 1. MiniGitパッケージの追加
+Xcodeで以下のパッケージを追加：
 
-### 1.1 Xcodeでパッケージを追加
+- **URL**: `https://github.com/light-tech/MiniGit`
+- **バージョン**: `main` ブランチ
 
-1. **XcodeでRememmo.xcodeprojを開く**
-2. **File → Add Package Dependencies**
-3. **Search or Enter Package URL**に以下を入力：
+### 2. ターゲットへの追加
 
-   ```
-   https://github.com/light-tech/MiniGit
-   ```
+- Rememmoターゲットに `MiniGit` パッケージを追加
+- **Frameworks, Libraries, and Embedded Content** で `Embed & Sign` に設定
 
-4. **Add Package**をクリック
-5. **Rememmo**ターゲットを選択して**Add Package**をクリック
+## 実装例
 
-### 1.2 パッケージの確認
-
-Package.swiftに以下が追加されていることを確認：
+### 基本的なインポート
 
 ```swift
-dependencies: [
-    .package(url: "https://github.com/light-tech/MiniGit", from: "1.0.0")
-]
-```
-
-## 2. MemoGitServiceの更新
-
-### 2.1 MiniGitインポートの追加
-
-```swift
-import Foundation
-import SwiftData
+import SwiftUI
 import MiniGit
 ```
 
-### 2.2 リポジトリ管理の追加
+### 状態管理
 
 ```swift
-class MemoGitService: ObservableObject {
-    private let modelContext: ModelContext
-    private var repositories: [UUID: Repository] = [:]
-    
-    // ... 既存のコード ...
-}
+@State private var repository: GitRepository?
+@State private var repoURL: URL?
+@State private var userName: String = "Rememmo User"
+@State private var userEmail: String = "user@rememmo.local"
 ```
 
-### 2.3 リポジトリ初期化メソッド
+### リポジトリ作成
 
 ```swift
-/// メモ用のGitリポジトリを初期化
-func initializeRepository(for memo: Memo) throws {
-    let repoPath = getMemoRepositoryPath(memoId: memo.id)
+private func createRepository() {
+    let fileManager = FileManager.default
+    let docURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+    let repoURL = docURL.appendingPathComponent("test-repo")
     
-    // リポジトリが存在しない場合は初期化
-    if !FileManager.default.fileExists(atPath: repoPath) {
-        try createRepository(at: repoPath)
-    }
-    
-    // リポジトリを開く
-    let repository = Repository(path: repoPath)
-    repository.open()
-    repositories[memo.id] = repository
-    
-    // 初回コミットの作成
-    if memo.currentCommitId == nil {
-        try createInitialCommit(for: memo)
-    }
-}
-```
-
-### 2.4 Gitコミット機能の追加
-
-```swift
-/// Gitリポジトリにコミット
-private func commitToGitRepository(for memo: Memo, message: String) throws {
-    guard let repository = repositories[memo.id] else {
-        throw GitError.repositoryNotFound
-    }
-    
-    // メモファイルを更新
-    let memoContent = createMemoContent(memo)
-    try writeMemoFile(memoId: memo.id, content: memoContent)
-    
-    // 変更をステージング
-    repository.add(pathspec: "memo.md")
-    
-    // Gitコミット
-    repository.commit(message: message)
-}
-```
-
-## 3. ファイル管理の実装
-
-### 3.1 メモファイルの保存構造
-
-```
-Documents/
-├── memos/
-│   ├── {memo-id-1}/
-│   │   ├── .git/                    # Gitリポジトリ
-│   │   └── memo.md                  # メモファイル
-│   ├── {memo-id-2}/
-│   │   ├── .git/
-│   │   └── memo.md
-│   └── ...
-```
-
-### 3.2 メモファイルの形式
-
-```markdown
-# メモタイトル
-
-メモの内容をここに記述します。
-
-## 見出し2
-
-- リスト項目1
-- リスト項目2
-
-**太字**や*斜体*も使用可能
-
----
-作成日: 2025年1月1日 10:00
-更新日: 2025年1月1日 12:00
-```
-
-## 4. SOLID原則の適用
-
-### 4.1 Single Responsibility Principle (単一責任の原則)
-
-- **MemoGitService**: Git操作のみに責任を持つ
-- **Memo**: メモデータの管理のみに責任を持つ
-- **MemoCommit**: コミット履歴の管理のみに責任を持つ
-
-### 4.2 Open/Closed Principle (開放/閉鎖の原則)
-
-- 新しいGit操作を追加する際は、既存のコードを変更せずに拡張可能
-- プロトコルを使用して依存関係を抽象化
-
-### 4.3 Liskov Substitution Principle (リスコフの置換原則)
-
-- RepositoryクラスはMiniGitのRepositoryに置き換え可能
-- エラーハンドリングは統一されたインターフェースを使用
-
-### 4.4 Interface Segregation Principle (インターフェース分離の原則)
-
-- 必要最小限のメソッドのみを公開
-- 内部実装の詳細は隠蔽
-
-### 4.5 Dependency Inversion Principle (依存関係逆転の原則)
-
-- 高レベルモジュール（MemoGitService）は低レベルモジュール（MiniGit）に依存しない
-- 抽象化されたインターフェースを通じて依存関係を管理
-
-## 5. エラーハンドリング
-
-### 5.1 GitErrorの定義
-
-```swift
-enum GitError: Error, LocalizedError {
-    case repositoryNotFound
-    case commitFailed
-    case fileOperationFailed
-    
-    var errorDescription: String? {
-        switch self {
-        case .repositoryNotFound:
-            return "Gitリポジトリが見つかりません"
-        case .commitFailed:
-            return "コミットに失敗しました"
-        case .fileOperationFailed:
-            return "ファイル操作に失敗しました"
+    do {
+        // 既存ディレクトリを削除
+        if fileManager.fileExists(atPath: repoURL.path) {
+            try fileManager.removeItem(at: repoURL)
         }
+        
+        // 新しいディレクトリを作成
+        try fileManager.createDirectory(at: repoURL, withIntermediateDirectories: true, attributes: nil)
+        
+        // credentials.jsonファイルを作成（重要：配列形式）
+        let credentialsFileURL = repoURL.appendingPathComponent("credentials.json")
+        let credentialsContent = "[]"  // 空の配列
+        try credentialsContent.write(to: credentialsFileURL, atomically: true, encoding: .utf8)
+        
+        // MiniGitでリポジトリを作成
+        let credentialsManager = CredentialsManager(credentialsFileUrl: credentialsFileURL)
+        let repo = GitRepository(repoURL, credentialsManager)
+        
+        // git init を実行
+        repo.create()
+        
+        // リポジトリを開く
+        repo.open()
+        
+        // Git設定を追加
+        try setupGitConfiguration(repo: repo)
+        
+        // 成功確認
+        if repo.hasRepo {
+            repository = repo
+        }
+    } catch {
+        print("エラー: \(error)")
     }
 }
 ```
 
-### 5.2 エラー処理の実装
+### Git設定の追加
 
 ```swift
-do {
-    try commitToGitRepository(for: memo, message: message)
-} catch GitError.repositoryNotFound {
-    print("リポジトリが見つかりません")
-} catch GitError.commitFailed {
-    print("コミットに失敗しました")
-} catch {
-    print("予期しないエラー: \(error)")
+private func setupGitConfiguration(repo: GitRepository) throws {
+    let configPath = repoURL!.appendingPathComponent(".git/config")
+    
+    let configContent = """
+    [core]
+    \trepositoryformatversion = 0
+    \tfilemode = true
+    \tbare = false
+    \tlogallrefupdates = true
+    \tignorecase = true
+    \tprecomposeunicode = true
+    
+    [user]
+    \tname = \(userName)
+    \temail = \(userEmail)
+    """
+    
+    try configContent.write(to: configPath, atomically: true, encoding: .utf8)
 }
 ```
 
-## 6. テスト
-
-### 6.1 ビルドテスト
-
-```bash
-xcodebuild -project Rememmo.xcodeproj -scheme Rememmo -destination 'platform=iOS Simulator,name=iPhone 16' build
-```
-
-### 6.2 機能テスト
-
-1. **メモ作成**: 新規メモを作成し、Gitリポジトリが初期化されることを確認
-2. **コミット**: メモを編集し、Gitコミットが作成されることを確認
-3. **履歴表示**: コミット履歴が正しく表示されることを確認
-4. **復元**: 過去のコミットから復元できることを確認
-
-## 7. パフォーマンス最適化
-
-### 7.1 リポジトリのキャッシュ
-
-- メモリ内でリポジトリインスタンスをキャッシュ
-- 不要になったリポジトリは適切にクリーンアップ
-
-### 7.2 非同期処理
-
-- 重いGit操作は非同期で実行
-- UIのブロッキングを防ぐ
-
-## 8. セキュリティ
-
-### 8.1 ファイルアクセス
-
-- アプリのDocumentsディレクトリ内でのみ操作
-- 外部からのアクセスを制限
-
-### 8.2 データ検証
-
-- コミットメッセージの検証
-- ファイル内容の整合性チェック
-
-## 9. 今後の拡張
-
-### 9.1 ブランチ機能
-
-- 複数のブランチでの作業
-- ブランチ間のマージ
-
-### 9.2 リモートリポジトリ
-
-- GitHub/GitLabとの連携
-- クラウド同期
-
-### 9.3 差分表示
-
-- コミット間の差分表示
-- 行単位での変更履歴
-
-## 10. トラブルシューティング
-
-### 10.1 よくある問題
-
-1. **MiniGitモジュールが見つからない**
-   - パッケージが正しく追加されているか確認
-   - ターゲットに追加されているか確認
-
-2. **ビルドエラー**
-   - 依存関係の競合がないか確認
-   - バージョンの互換性を確認
-
-3. **Git操作エラー**
-   - ファイルパーミッションを確認
-   - ディスク容量を確認
-
-### 10.2 デバッグ方法
+### ファイルのコミット
 
 ```swift
-// デバッグログの追加
-print("リポジトリパス: \(repoPath)")
-print("コミットメッセージ: \(message)")
+private func commitFile() {
+    guard let repo = repository, repo.hasRepo, let repoURL = repoURL else {
+        return
+    }
+    
+    let fileURL = repoURL.appendingPathComponent("test.txt")
+    let content = "MiniGitテスト \(Date())"
+    
+    do {
+        // ファイル作成
+        try content.write(to: fileURL, atomically: true, encoding: .utf8)
+        
+        // ステージング
+        repo.stage("test.txt")
+        
+        // コミット
+        repo.commit("テストコミット")
+    } catch {
+        print("コミットエラー: \(error)")
+    }
+}
 ```
 
-## まとめ
+## 重要なポイント
 
-MiniGitの統合により、Rememmoアプリは本格的なGit機能を獲得し、ユーザーはメモの変更履歴を詳細に管理できるようになります。SOLID原則に従った設計により、保守性と拡張性を確保し、将来の機能追加も容易になります。
+### 1. CredentialsManager の設定
+
+- `credentialsFileUrl` には**ファイルパス**を渡す（ディレクトリパスではない）
+- `credentials.json` の内容は**配列形式** `[]` にする
+- 辞書形式 `{"credentials": []}` は使わない
+
+### 2. エラーハンドリング
+
+よくあるエラーと対処法：
+
+#### "Is a directory" エラー
+
+```swift
+// ❌ 間違い
+let credentialsManager = CredentialsManager(credentialsFileUrl: repoURL)
+
+// ✅ 正しい
+let credentialsFileURL = repoURL.appendingPathComponent("credentials.json")
+let credentialsManager = CredentialsManager(credentialsFileUrl: credentialsFileURL)
+```
+
+#### "No such file or directory" エラー
+
+```swift
+// credentials.jsonファイルを事前に作成
+let credentialsContent = "[]"
+try credentialsContent.write(to: credentialsFileURL, atomically: true, encoding: .utf8)
+```
+
+#### "typeMismatch" エラー
+
+```swift
+// ❌ 間違い（辞書形式）
+let credentialsContent = """
+{
+    "credentials": []
+}
+"""
+
+// ✅ 正しい（配列形式）
+let credentialsContent = """
+[]
+"""
+```
+
+### 3. ファイルパスの注意点
+
+- ディレクトリとファイルを混同しない
+- `FileManager` でディレクトリを作成
+- ファイル操作は個別のファイルパスを使用
+
+## テスト手順
+
+1. **ファイルテスト** - 基本的なファイル操作の確認
+2. **Git Init** - リポジトリの作成と初期化
+3. **Git Commit** - ファイルのステージングとコミット
+4. **ログクリア** - ログのリセット
+
+## トラブルシューティング
+
+### MiniGitモジュールが見つからない場合
+
+1. Xcodeでプロジェクトを開く
+2. **File** → **Add Package Dependencies...**
+3. URL: `https://github.com/light-tech/MiniGit`
+4. ターゲットに追加して **Embed & Sign** に設定
+
+### ビルドエラーが続く場合
+
+1. **Product** → **Clean Build Folder**
+2. **Window** → **Organizer** → **Projects** → **Delete Derived Data**
+3. シミュレーターを再起動
+
+## 参考リンク
+
+- [MiniGit GitHub](https://github.com/light-tech/MiniGit)
+- [Swift Package Manager](https://developer.apple.com/documentation/swift_packages)
