@@ -1,0 +1,19 @@
+{
+	"name": "xcode build server",
+	"version": "0.2",
+	"bspVersion": "2.0",
+	"languages": [
+		"c",
+		"cpp",
+		"objective-c",
+		"objective-cpp",
+		"swift"
+	],
+	"argv": [
+		"/opt/homebrew/bin/xcode-build-server"
+	],
+	"workspace": "/Users/haradakeigo/work/practice/swift-practice/Rememmo/Rememmo.xcodeproj/project.xcworkspace",
+	"build_root": "/Users/haradakeigo/Library/Developer/Xcode/DerivedData/Rememmo-boayvygnfzyfypafkgrtkljhuqmg",
+	"scheme": "Rememmo",
+	"kind": "xcode"
+}
