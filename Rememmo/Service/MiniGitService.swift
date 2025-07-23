@@ -1,7 +1,7 @@
 import Foundation
 import MiniGit
 
-struct RealGitService: GitServiceProtocol {
+struct MiniGitService: GitServiceProtocol {
     private let fileManager = FileManager.default
     private var repoURL: URL {
         let docURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!

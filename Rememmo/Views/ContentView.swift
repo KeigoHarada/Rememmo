@@ -1,19 +1,5 @@
 import SwiftUI
 
-// Git操作のインターフェース（共通プロトコル）
-protocol GitServiceProtocol {
-    func fileTest(log: inout String)
-    func gitInit(log: inout String)
-    func gitCommit(log: inout String)
-}
-
-// Preview用ダミー
-struct DummyGitService: GitServiceProtocol {
-    func fileTest(log: inout String) { log += "[PREVIEW] ファイルテストは無効です\n" }
-    func gitInit(log: inout String) { log += "[PREVIEW] Git Initは無効です\n" }
-    func gitCommit(log: inout String) { log += "[PREVIEW] Git Commitは無効です\n" }
-}
-
 struct ContentView: View {
     @State private var log: String = ""
     @State private var testCount = 0
@@ -84,6 +70,6 @@ struct ContentView: View {
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView(gitService: RealGitService())
+        ContentView(gitService: DummyGitService())
     }
 }
