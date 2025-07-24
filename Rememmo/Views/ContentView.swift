@@ -1,75 +1,67 @@
 import SwiftUI
 
-struct ContentView: View {
-    @State private var log: String = ""
-    @State private var testCount = 0
-    @State private var userName: String = "Rememmo User"
-    @State private var userEmail: String = "user@rememmo.local"
-    let gitService: GitServiceProtocol
+struct Memo: Identifiable {
+    let id = UUID()
+    var title: String
+    var content: String
+    var createdAt: Date
+}
 
+struct ContentView: View {
+    @State private var memos: [Memo] = []
+    @State private var showingNewMemo = false
+    @State private var selectedMemo: Memo?
+    
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Rememmo テスト")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Git設定:")
-                    .font(.headline)
-                
-                HStack {
-                    Text("名前:")
-                    TextField("ユーザー名", text: $userName)
-                        .textFieldStyle(.roundedBorder)
+        NavigationView {
+            List {
+                ForEach(memos) { memo in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(memo.title)
+                            .font(.headline)
+                        Text(memo.content)
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                        Text(memo.createdAt, style: .date)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.vertical, 4)
+                    .onTapGesture {
+                        selectedMemo = memo
+                    }
                 }
-                
-                HStack {
-                    Text("メール:")
-                    TextField("メールアドレス", text: $userEmail)
-                        .textFieldStyle(.roundedBorder)
+                .onDelete { indexSet in
+                    memos.remove(atOffsets: indexSet)
                 }
             }
-            .padding()
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(8)
-            
-            Button("ファイルテスト") {
-                gitService.fileTest(log: &log)
+            .navigationTitle("メモ一覧")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("新規作成") {
+                        showingNewMemo = true
+                    }
+                }
             }
-            .buttonStyle(.borderedProminent)
-            
-            Button("Git Init") {
-                gitService.gitInit(log: &log)
+            .sheet(isPresented: $showingNewMemo) {
+                MemoEditView(memo: nil) { newMemo in
+                    memos.append(newMemo)
+                }
             }
-            .buttonStyle(.borderedProminent)
-            .disabled(false)
-            
-            Button("Git Commit") {
-                gitService.gitCommit(log: &log)
+            .sheet(item: $selectedMemo) { memo in
+                MemoEditView(memo: memo) { updatedMemo in
+                    if let index = memos.firstIndex(where: { $0.id == updatedMemo.id }) {
+                        memos[index] = updatedMemo
+                    }
+                }
             }
-            .buttonStyle(.bordered)
-            .disabled(false)
-            
-            Button("ログクリア") {
-                log = ""
-            }
-            .buttonStyle(.bordered)
-            
-            ScrollView {
-                Text(log)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-            }
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(8)
-            .frame(height: 300)
         }
-        .padding()
     }
 }
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView(gitService: DummyGitService())
+        ContentView()
     }
 }

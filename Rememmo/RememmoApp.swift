@@ -5,7 +5,6 @@ struct RememmoApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(
-                gitService: MiniGitService()
             )
         }
     }
