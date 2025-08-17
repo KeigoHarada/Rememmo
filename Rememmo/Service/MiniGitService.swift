@@ -3,9 +3,10 @@ import MiniGit
 import SwiftData
 
 struct MiniGitService: GitServiceProtocol {
-    private let fileManager = FileManager.default
     private let modelContext: ModelContext?
-    
+    private let fileManager = FileManager.default
+    let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+
     init(modelContext: ModelContext? = nil) {
         self.modelContext = modelContext
     }
@@ -23,22 +24,9 @@ struct MiniGitService: GitServiceProtocol {
         return CredentialsManager(credentialsFileUrl: credentialsFileURL)
     }
     
-    /// Documents ディレクトリ内のremmemoフォルダを取得・作成
-    private func getAppManagedFolder() throws -> URL {
-        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let appManagedFolderURL = documentsURL.appendingPathComponent("remmemo")
-        
-        // remmemoフォルダが存在しない場合は作成
-        if !fileManager.fileExists(atPath: appManagedFolderURL.path) {
-            try fileManager.createDirectory(at: appManagedFolderURL, withIntermediateDirectories: true, attributes: nil)
-        }
-        
-        return appManagedFolderURL
-    }
-    
     /// タイトルフォルダを作成・準備する
-    private func createTitleFolder(title: String, in appManagedFolderURL: URL) throws -> URL {
-        let titleFolderURL = appManagedFolderURL.appendingPathComponent(title)
+    private func createTitleFolder(title: String, in documentsURL: URL) throws -> URL {
+        let titleFolderURL = documentsURL.appendingPathComponent(title)
         
         // 既存のディレクトリを削除
         if fileManager.fileExists(atPath: titleFolderURL.path) {
@@ -83,10 +71,8 @@ struct MiniGitService: GitServiceProtocol {
 
     func gitInit(title: String, log: inout String) {
         do {
-            let appManagedFolderURL = try getAppManagedFolder()
-            log += "remmemoフォルダを確保しました: \(appManagedFolderURL.path)\n"
             
-            let titleFolderURL = try createTitleFolder(title: title, in: appManagedFolderURL)
+            let titleFolderURL = try createTitleFolder(title: title, in: documentsURL)
             log += "タイトルディレクトリを作成しました: \(titleFolderURL.path)\n"
             
             let credentialsManager = try createCredentialsManager(for: titleFolderURL)
@@ -111,16 +97,14 @@ struct MiniGitService: GitServiceProtocol {
         } catch {
             log += "❌ リポジトリ作成エラー: \(error)\n"
         }
-        log += "=== Git Init テスト完了 ===\n\n"
+        log += "=== Git Init 完了 ===\n\n"
     }
 
     func gitCommit(log: inout String) {
         do {
-            // アプリ管理フォルダ（remmemo）を確認
-            let appManagedFolderURL = try getAppManagedFolder()
             
             // 既存のリポジトリフォルダを探す（credentials.json の存在で判定）
-            let contents = try fileManager.contentsOfDirectory(at: appManagedFolderURL, includingPropertiesForKeys: nil)
+            let contents = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil)
             guard let repoFolderURL = contents.first(where: { url in
                 let credentialsURL = url.appendingPathComponent("credentials.json")
                 return fileManager.fileExists(atPath: credentialsURL.path)
