@@ -69,28 +69,34 @@ struct MiniGitService: GitServiceProtocol {
         try configContent.write(to: configPath, atomically: true, encoding: .utf8)
     }
 
-    func gitInit(title: String, log: inout String) {
+    func gitInit(repositoryPath: String, log: inout String) {
         do {
+            print("🚀 gitInit started for repositoryPath: \(repositoryPath)")
+            log += "=== Git Init 開始: \(repositoryPath) ===\n"
             
-            let titleFolderURL = try createTitleFolder(title: title, in: documentsURL)
-            log += "タイトルディレクトリを作成しました: \(titleFolderURL.path)\n"
+            let repositoryURL = URL(fileURLWithPath: repositoryPath)
             
-            let credentialsManager = try createCredentialsManager(for: titleFolderURL)
+            // ディレクトリが存在しない場合は作成
+            if !fileManager.fileExists(atPath: repositoryURL.path) {
+                try fileManager.createDirectory(at: repositoryURL, withIntermediateDirectories: true, attributes: nil)
+                log += "リポジトリディレクトリを作成しました: \(repositoryURL.path)\n"
+            }
+            
+            print("🔄 About to call createCredentialsManager...")
+            let credentialsManager = try createCredentialsManager(for: repositoryURL)
+            print("✅ credentialsManager created successfully")
             log += "credentials.jsonファイルを作成しました\n"
             
-            // MiniGitでリポジトリを作成
-            let repo = GitRepository(titleFolderURL, credentialsManager)
+            let repo = GitRepository(repositoryURL, credentialsManager)
             repo.create()
             log += "Gitリポジトリを作成しました（git init）\n"
             repo.open()
             log += "Gitリポジトリを開きました\n"
             
-            // Git設定を追加
-            try createGitConfig(at: titleFolderURL)
+            try createGitConfig(at: repositoryURL)
             log += "✅ Git設定を追加しました\n"
-            
             if repo.hasRepo {
-                log += "✅ リポジトリ作成成功: \(titleFolderURL.path)\n"
+                log += "✅ リポジトリ作成成功: \(repositoryURL.path)\n"
             } else {
                 log += "❌ リポジトリ作成失敗\n"
             }
@@ -100,41 +106,70 @@ struct MiniGitService: GitServiceProtocol {
         log += "=== Git Init 完了 ===\n\n"
     }
 
-    func gitCommit(log: inout String) {
+    func gitCommit(repositoryPath: String, fileName: String, commitMessage: String, log: inout String) {
         do {
+            print("🚀 gitCommit started for repositoryPath: \(repositoryPath), fileName: \(fileName)")
+            log += "=== Git Commit 開始: \(repositoryPath) ===\n"
             
-            // 既存のリポジトリフォルダを探す（credentials.json の存在で判定）
-            let contents = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil)
-            guard let repoFolderURL = contents.first(where: { url in
-                let credentialsURL = url.appendingPathComponent("credentials.json")
-                return fileManager.fileExists(atPath: credentialsURL.path)
-            }) else {
-                log += "❌ 既存のリポジトリが見つかりません。まずgit initを実行してください\n"
+            let repositoryURL = URL(fileURLWithPath: repositoryPath)
+            let fileURL = repositoryURL.appendingPathComponent(fileName)
+            
+            // リポジトリが存在するかチェック
+            let gitPath = repositoryURL.appendingPathComponent(".git").path
+            guard fileManager.fileExists(atPath: gitPath) else {
+                log += "❌ 無効なリポジトリです: \(repositoryPath)\n"
+                print("❌ Invalid repository: \(repositoryPath)")
                 return
             }
             
-            let fileURL = repoFolderURL.appendingPathComponent("test.txt")
-            let content = "MiniGitテスト \(Date())"
+            // ファイルが存在するかチェック
+            guard fileManager.fileExists(atPath: fileURL.path) else {
+                log += "❌ ファイルが見つかりません: \(fileURL.path)\n"
+                print("❌ File not found: \(fileURL.path)")
+                return
+            }
             
-            // ファイル作成
-            try content.write(to: fileURL, atomically: true, encoding: .utf8)
-            log += "ファイル作成: \(fileURL.lastPathComponent) in \(repoFolderURL.lastPathComponent)\n"
+            print("✅ Repository and file exist")
+            log += "リポジトリとファイルを確認しました\n"
             
             // MiniGitでリポジトリを開く
-            let credentialsManager = try createCredentialsManager(for: repoFolderURL)
-            let repo = GitRepository(repoFolderURL, credentialsManager)
+            print("🔄 About to create credentials manager...")
+            let credentialsManager = try createCredentialsManager(for: repositoryURL)
+            print("✅ Credentials manager created")
+            
+            let repo = GitRepository(repositoryURL, credentialsManager)
             repo.open()
+            log += "Gitリポジトリを開きました\n"
+            print("✅ Git repository opened")
             
-            // ステージング
-            repo.stage("test.txt")
-            log += "ステージング完了\n"
+            // ファイルをステージング
+            repo.stage(fileName)
+            log += "ファイルをステージングしました: \(fileName)\n"
+            print("✅ File staged: \(fileName)")
             
-            // コミット
-            repo.commit("テストコミット")
-            log += "✅ コミット成功: テストコミット\n"
+            // コミットメッセージが空の場合はデフォルトメッセージを使用
+            let finalCommitMessage = commitMessage.isEmpty ? "ファイルを更新: \(fileName)" : commitMessage
+            
+            // コミット実行
+            repo.commit(finalCommitMessage)
+            log += "✅ コミット成功: \(finalCommitMessage)\n"
+            print("✅ Commit successful: \(finalCommitMessage)")
+            
+            // コミット後の状態確認
+            if repo.hasRepo {
+                log += "✅ リポジトリは正常な状態です\n"
+                print("✅ Repository is in good state")
+            } else {
+                log += "⚠️ リポジトリの状態に問題があります\n"
+                print("⚠️ Repository state issue")
+            }
+            
         } catch {
-            log += "❌ コミットエラー: \(error)\n"
+            log += "❌ コミットエラー: \(error.localizedDescription)\n"
+            print("❌ Commit error: \(error)")
         }
-        log += "=== Git Commit テスト完了 ===\n\n"
+        
+        log += "=== Git Commit 完了 ===\n\n"
+        print("🏁 gitCommit completed")
     }
 }

@@ -7,6 +7,6 @@ struct RememmoApp: App {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(for: [UserSettings.self])
+        .modelContainer(for: [UserSettings.self, Memo.self])
     }
 }

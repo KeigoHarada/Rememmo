@@ -1,4 +1,4 @@
 protocol GitServiceProtocol {
-    func gitInit(title: String, log: inout String)
-    func gitCommit(log: inout String)
+    func gitInit(repositoryPath: String, log: inout String)
+    func gitCommit(repositoryPath: String, fileName: String, commitMessage: String, log: inout String)
 }

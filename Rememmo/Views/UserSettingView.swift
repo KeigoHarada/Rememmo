@@ -10,6 +10,12 @@ struct UserSettingView: View {
     @State private var showingAlert = false
     @State private var alertMessage = ""
     
+    /// フォームのバリデーション状態
+    private var isFormValid: Bool {
+        let tempSettings = UserSettings(userName: userName, userEmail: userEmail)
+        return tempSettings.isValid
+    }
+    
     var body: some View {
         NavigationView {
             Form {
@@ -32,7 +38,7 @@ struct UserSettingView: View {
                     .padding()
                     .background(Color.blue)
                     .cornerRadius(8)
-                    .disabled(userName.isEmpty || userEmail.isEmpty)
+                    .disabled(!isFormValid)
                 }
             }
             .navigationTitle("設定")
@@ -51,36 +57,32 @@ struct UserSettingView: View {
     }
     
     private func saveSettings() {
-        // 基本的なバリデーション
-        guard !userName.isEmpty else {
-            alertMessage = "ユーザー名を入力してください"
-            showingAlert = true
-            return
-        }
+        // アプリ管理フォルダのURLを取得
+        let appManagedFolderURL = getAppManagedFolderURL()
         
-        guard !userEmail.isEmpty else {
-            alertMessage = "メールアドレスを入力してください"
-            showingAlert = true
-            return
-        }
+        // UserSettingsの静的メソッドを使用してGit設定を更新
+        let result = UserSettings.updateGitConfiguration(
+            userName: userName,
+            userEmail: userEmail,
+            in: appManagedFolderURL,
+            modelContext: modelContext
+        )
         
-        // SwiftDataに保存
-        if let existingSettings = userSettings.first {
-            existingSettings.userName = userName
-            existingSettings.userEmail = userEmail
+        alertMessage = result.message
+        showingAlert = true
+        
+        if result.success {
+            print("✅ Git configuration updated successfully")
         } else {
-            let newSettings = UserSettings(userName: userName, userEmail: userEmail)
-            modelContext.insert(newSettings)
+            print("❌ Failed to update Git configuration: \(result.message)")
         }
-        
-        do {
-            try modelContext.save()
-            alertMessage = "設定を保存しました"
-            showingAlert = true
-        } catch {
-            alertMessage = "設定の保存に失敗しました"
-            showingAlert = true
-        }
+    }
+    
+    /// アプリ管理フォルダのURLを取得
+    private func getAppManagedFolderURL() -> URL {
+        let fileManager = FileManager.default
+        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+        return documentsURL.appendingPathComponent("remmemo")
     }
     
     private func loadSettings() {

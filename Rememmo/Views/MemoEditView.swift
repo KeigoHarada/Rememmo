@@ -1,14 +1,21 @@
 import SwiftUI
 
+// 一時的なメモ表示用構造体
+struct TempMemo {
+    var title: String
+    var content: String
+    var createdAt: Date
+}
+
 struct MemoEditView: View {
-    let memo: Memo?
-    let onSave: (Memo) -> Void
+    let memo: TempMemo?
+    let onSave: (TempMemo) -> Void
     
     @State private var title: String = ""
     @State private var content: String = ""
     @Environment(\.dismiss) private var dismiss
     
-    init(memo: Memo?, onSave: @escaping (Memo) -> Void) {
+    init(memo: TempMemo?, onSave: @escaping (TempMemo) -> Void) {
         self.memo = memo
         self.onSave = onSave
         
@@ -43,7 +50,7 @@ struct MemoEditView: View {
             .padding()
             .navigationTitle(memo == nil ? "新規メモ" : "メモ編集")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
+            .toolbar(content: {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("キャンセル") {
                         dismiss()
@@ -56,7 +63,7 @@ struct MemoEditView: View {
                         let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
                         
                         if !trimmedTitle.isEmpty {
-                            let newMemo = Memo(
+                            let newMemo = TempMemo(
                                 title: trimmedTitle,
                                 content: trimmedContent,
                                 createdAt: memo?.createdAt ?? Date()
@@ -67,7 +74,7 @@ struct MemoEditView: View {
                     }
                     .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
-            }
+            })
         }
     }
 }
