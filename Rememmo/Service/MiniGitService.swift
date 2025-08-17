@@ -12,20 +12,6 @@ struct MiniGitService: GitServiceProtocol {
     }
     // repositoryは都度生成
 
-    func fileTest(log: inout String) {
-        let testURL = repoURL.appendingPathComponent("test-file.txt")
-        do {
-            let content = "テスト内容 \(Date())"
-            try content.write(to: testURL, atomically: true, encoding: .utf8)
-            log += "✅ ファイル作成成功: \(testURL.path)\n"
-            let readContent = try String(contentsOf: testURL, encoding: .utf8)
-            log += "✅ ファイル読み込み成功: \(readContent)\n"
-        } catch {
-            log += "❌ ファイル操作エラー: \(error)\n"
-        }
-        log += "=== ファイルテスト完了 ===\n\n"
-    }
-
     func gitInit(log: inout String) {
         do {
             // 既存のディレクトリを削除
