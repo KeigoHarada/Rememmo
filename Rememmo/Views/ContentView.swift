@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 struct Memo: Identifiable {
     let id = UUID()
@@ -8,8 +9,17 @@ struct Memo: Identifiable {
 }
 
 struct ContentView: View {
+    @Environment(\.modelContext) private var modelContext
     @State private var memos: [Memo] = []
     @State private var showingNewMemo = false
+    @State private var gitLog: String = ""
+    
+    let gitService: GitServiceProtocol
+    
+    init(gitService: GitServiceProtocol = MiniGitService()) {
+        self.gitService = gitService
+        print("ContentView initialized with: \(type(of: gitService))")
+    }
     
     var body: some View {
         NavigationView {
@@ -42,7 +52,8 @@ struct ContentView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     NavigationLink(destination: UserSettingView()) {
-                        Image(systemName: "gear")
+                        Image(systemName: "person.circle")
+                            .foregroundColor(.blue)
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -53,7 +64,15 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showingNewMemo) {
                 MemoEditView(memo: nil) { newMemo in
+                    // メモを追加
                     memos.append(newMemo)
+                    
+                    // 新しいメモ用のGitリポジトリを初期化
+                    gitService.gitInit(title: newMemo.title, log: &gitLog)
+                    
+                    // デバッグ用ログを出力
+                    print("Git Init Log for memo '\(newMemo.title)':")
+                    print(gitLog)
                 }
             }
         }
@@ -62,6 +81,7 @@ struct ContentView: View {
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView()
+        ContentView(gitService: DummyGitService())
+            .modelContainer(for: [UserSettings.self])
     }
 }
