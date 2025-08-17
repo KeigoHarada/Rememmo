@@ -1,11 +1,12 @@
 import SwiftUI
+import SwiftData
 
 @main
 struct RememmoApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView(
-            )
+            ContentView()
         }
+        .modelContainer(for: [UserSettings.self])
     }
 }
