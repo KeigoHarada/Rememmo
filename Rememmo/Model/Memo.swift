@@ -80,8 +80,7 @@ class Memo: Identifiable {
     /// メモの内容をコミット
     func commitChanges(commitMessage: String = "", using gitService: GitServiceProtocol) -> (success: Bool, log: String) {
         var log = ""
-        let markdownFileName = markdownFileURL.lastPathComponent
-        gitService.gitCommit(repositoryPath: repoUrl, fileName: markdownFileName, commitMessage: commitMessage, log: &log)
+        gitService.gitCommit(repositoryPath: repoUrl, commitMessage: commitMessage, log: &log)
         
         // ログから成功/失敗を判定
         let success = log.contains("✅ コミット成功") && !log.contains("❌")
@@ -130,7 +129,7 @@ class Memo: Identifiable {
             try memo.writeMarkdownContent(defaultContent)
             
             // 初期コミット
-            let commitResult = memo.commitChanges(commitMessage: "初期コミット: \(title)", using: gitService)
+            let commitResult = memo.commitChanges(commitMessage: "first-commit: \(title)", using: gitService)
             log += commitResult.log
             
             let success = log.contains("✅ リポジトリ作成成功") && commitResult.success

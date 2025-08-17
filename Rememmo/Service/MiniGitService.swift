@@ -5,7 +5,6 @@ import SwiftData
 struct MiniGitService: GitServiceProtocol {
     private let modelContext: ModelContext?
     private let fileManager = FileManager.default
-    let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
 
     init(modelContext: ModelContext? = nil) {
         self.modelContext = modelContext
@@ -22,21 +21,6 @@ struct MiniGitService: GitServiceProtocol {
         }
         
         return CredentialsManager(credentialsFileUrl: credentialsFileURL)
-    }
-    
-    /// タイトルフォルダを作成・準備する
-    private func createTitleFolder(title: String, in documentsURL: URL) throws -> URL {
-        let titleFolderURL = documentsURL.appendingPathComponent(title)
-        
-        // 既存のディレクトリを削除
-        if fileManager.fileExists(atPath: titleFolderURL.path) {
-            try fileManager.removeItem(at: titleFolderURL)
-        }
-        
-        // 新しいディレクトリを作成
-        try fileManager.createDirectory(at: titleFolderURL, withIntermediateDirectories: true, attributes: nil)
-        
-        return titleFolderURL
     }
     
     /// UserSettingsを取得する
@@ -106,13 +90,12 @@ struct MiniGitService: GitServiceProtocol {
         log += "=== Git Init 完了 ===\n\n"
     }
 
-    func gitCommit(repositoryPath: String, fileName: String, commitMessage: String, log: inout String) {
+    func gitCommit(repositoryPath: String, commitMessage: String, log: inout String) {
         do {
-            print("🚀 gitCommit started for repositoryPath: \(repositoryPath), fileName: \(fileName)")
+            print("🚀 gitCommit started for repositoryPath: \(repositoryPath)")
             log += "=== Git Commit 開始: \(repositoryPath) ===\n"
             
             let repositoryURL = URL(fileURLWithPath: repositoryPath)
-            let fileURL = repositoryURL.appendingPathComponent(fileName)
             
             // リポジトリが存在するかチェック
             let gitPath = repositoryURL.appendingPathComponent(".git").path
@@ -122,15 +105,8 @@ struct MiniGitService: GitServiceProtocol {
                 return
             }
             
-            // ファイルが存在するかチェック
-            guard fileManager.fileExists(atPath: fileURL.path) else {
-                log += "❌ ファイルが見つかりません: \(fileURL.path)\n"
-                print("❌ File not found: \(fileURL.path)")
-                return
-            }
-            
-            print("✅ Repository and file exist")
-            log += "リポジトリとファイルを確認しました\n"
+            print("✅ Repository exists")
+            log += "リポジトリを確認しました\n"
             
             // MiniGitでリポジトリを開く
             print("🔄 About to create credentials manager...")
@@ -142,13 +118,17 @@ struct MiniGitService: GitServiceProtocol {
             log += "Gitリポジトリを開きました\n"
             print("✅ Git repository opened")
             
-            // ファイルをステージング
-            repo.stage(fileName)
-            log += "ファイルをステージングしました: \(fileName)\n"
-            print("✅ File staged: \(fileName)")
+            // リポジトリ内のすべてのファイルをステージング
+            let files = try getRepositoryFiles(at: repositoryURL)
+            for file in files {
+                repo.stage(file)
+                print("✅ Staged file: \(file)")
+            }
+            log += "すべてのファイルをステージングしました（\(files.count)個のファイル）\n"
+            print("✅ All files staged: \(files.count) files")
             
             // コミットメッセージが空の場合はデフォルトメッセージを使用
-            let finalCommitMessage = commitMessage.isEmpty ? "ファイルを更新: \(fileName)" : commitMessage
+            let finalCommitMessage = commitMessage.isEmpty ? "update" : commitMessage
             
             // コミット実行
             repo.commit(finalCommitMessage)
@@ -171,5 +151,37 @@ struct MiniGitService: GitServiceProtocol {
         
         log += "=== Git Commit 完了 ===\n\n"
         print("🏁 gitCommit completed")
+    }
+    
+    /// リポジトリ内のファイル一覧を再帰的に取得（.gitフォルダを除く）
+    private func getRepositoryFiles(at directoryURL: URL, relativeTo baseURL: URL? = nil) throws -> [String] {
+        let baseURL = baseURL ?? directoryURL
+        let contents = try fileManager.contentsOfDirectory(at: directoryURL, includingPropertiesForKeys: [.isDirectoryKey], options: [])
+        
+        var files: [String] = []
+        
+        for item in contents {
+            // .gitフォルダは除外
+            if item.lastPathComponent == ".git" {
+                continue
+            }
+            
+            var isDirectory: ObjCBool = false
+            fileManager.fileExists(atPath: item.path, isDirectory: &isDirectory)
+            
+            if isDirectory.boolValue {
+                // ディレクトリの場合は再帰的に検索
+                let subFiles = try getRepositoryFiles(at: item, relativeTo: baseURL)
+                files.append(contentsOf: subFiles)
+            } else {
+                // ファイルの場合は相対パスを追加
+                let relativePath = directoryURL == baseURL ? 
+                    item.lastPathComponent : 
+                    String(item.path.dropFirst(baseURL.path.count + 1))
+                files.append(relativePath)
+            }
+        }
+        
+        return files
     }
 }
