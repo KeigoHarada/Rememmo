@@ -5,7 +5,6 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var memos: [Memo]
     @State private var showingNewMemo = false
-    @State private var newMemoTitle = ""
     @State private var gitLog: String = ""
     
     private let gitService: GitServiceProtocol
@@ -56,28 +55,22 @@ struct ContentView: View {
                     }
                 }
             }
-            .alert("新しいメモ", isPresented: $showingNewMemo) {
-                TextField("メモタイトル", text: $newMemoTitle)
-                Button("作成") {
-                    createNewMemo()
+            .sheet(isPresented: $showingNewMemo) {
+                MemoEditView(memo: nil) { tempMemo in
+                    createNewMemo(title: tempMemo.title, content: tempMemo.content)
                 }
-                Button("キャンセル", role: .cancel) {
-                    newMemoTitle = ""
-                }
-            } message: {
-                Text("新しいメモのタイトルを入力してください")
             }
         }
     }
     
     /// 新しいメモを作成
-    private func createNewMemo() {
-        guard !newMemoTitle.isEmpty else { return }
+    private func createNewMemo(title: String, content: String) {
+        guard !title.isEmpty else { return }
         
         let appManagedFolderURL = getAppManagedFolderURL()
         
-        // Memoのファクトリーメソッドを使用
-        let result = Memo.createNew(title: newMemoTitle, using: gitService, in: appManagedFolderURL)
+        // Memoのファクトリーメソッドを使用（初期コンテンツを指定）
+        let result = Memo.createNew(title: title, initialContent: content, using: gitService, in: appManagedFolderURL)
         
         gitLog = result.log
         
@@ -87,7 +80,7 @@ struct ContentView: View {
             try? modelContext.save()
             
             print("✅ Memo created successfully:")
-            print("- Title: \(newMemoTitle)")
+            print("- Title: \(title)")
             print("- Repository: \(memo.repoUrl)")
             print("- ID: \(memo.id)")
         } else {
@@ -96,9 +89,6 @@ struct ContentView: View {
         
         print("Creation Log:")
         print(gitLog)
-        
-        // リセット
-        newMemoTitle = ""
     }
     
     /// アプリ管理フォルダのURLを取得

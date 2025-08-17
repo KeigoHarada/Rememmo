@@ -67,6 +67,15 @@ class Memo: Identifiable {
         }
     }
     
+    /// マークダウンファイルの完全な内容を取得（編集用）
+    func fullContent() -> String {
+        do {
+            return try readMarkdownContent()
+        } catch {
+            return ""
+        }
+    }
+    
     // MARK: - Validation
     
     /// リポジトリのパスが有効かチェック

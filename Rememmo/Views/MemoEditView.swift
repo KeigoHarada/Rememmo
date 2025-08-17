@@ -22,6 +22,10 @@ struct MemoEditView: View {
         if let memo = memo {
             _title = State(initialValue: memo.title)
             _content = State(initialValue: memo.content)
+        } else {
+            // 新規作成時のデフォルト値
+            _title = State(initialValue: "")
+            _content = State(initialValue: "")
         }
     }
     

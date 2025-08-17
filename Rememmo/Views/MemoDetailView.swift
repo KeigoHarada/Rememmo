@@ -64,8 +64,15 @@ struct MemoDetailView: View {
             }
         })
         .sheet(isPresented: $showingEditView) {
-            // 現在の設計では編集機能は簡略化
-            Text("編集機能は今後実装予定")
+            MemoEditView(memo: createTempMemo()) { tempMemo in
+                // メモの内容を更新
+                let result = memo.updateAndCommit(content: createMarkdownContent(from: tempMemo), commitMessage: "メモを編集: \(tempMemo.title)", using: gitService)
+                gitLog = result.log
+                
+                if result.success {
+                    onUpdate(memo)
+                }
+            }
         }
         .alert("Git Commit", isPresented: $showingCommitDialog) {
             TextField("コミットメッセージ", text: $commitMessage)
@@ -96,6 +103,43 @@ struct MemoDetailView: View {
         // コミット後、ログを表示
         showingGitLog = true
         commitMessage = ""
+    }
+    
+    /// 現在のメモ内容からTempMemoを作成
+    private func createTempMemo() -> TempMemo {
+        let fullContent = memo.fullContent() // 完全な内容を取得
+        
+        // マークダウンの見出し部分を除いてコンテンツを抽出
+        let lines = fullContent.components(separatedBy: .newlines)
+        var contentLines: [String] = []
+        var foundTitle = false
+        
+        for line in lines {
+            if line.hasPrefix("# ") && !foundTitle {
+                foundTitle = true
+                continue
+            }
+            if foundTitle && !line.isEmpty {
+                contentLines.append(line)
+            }
+        }
+        
+        let content = contentLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        return TempMemo(
+            title: memo.title,
+            content: content,
+            createdAt: memo.lastModifiedDate() ?? Date()
+        )
+    }
+    
+    /// TempMemoからマークダウン形式のコンテンツを作成
+    private func createMarkdownContent(from tempMemo: TempMemo) -> String {
+        return """
+        # \(tempMemo.title)
+        
+        \(tempMemo.content)
+        """
     }
 }
 
